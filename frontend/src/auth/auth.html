@@ -1,0 +1,214 @@
+
+<div
+  class="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-cover bg-center bg-no-repeat p-4"
+  style="background-image: url('assets/imgs/Bgpricesindicator.png');"
+>
+  <!-- Dark overlay -->
+  <div class="absolute inset-0 bg-black/40"></div>
+
+  <!-- Main container -->
+  <div class="relative w-full max-w-5xl">
+
+    <!-- Mobile logo -->
+    <div class="-mt-6 flex justify-center md:hidden">
+      <img
+        src="assets/imgs/PricesIndicatorlogo-removebg-preview.png"
+        alt="Prices Indicator Logo"
+        class="h-44 w-auto object-contain drop-shadow-2xl"
+      />
+    </div>
+
+    <!-- Glass container -->
+    <div class="flex w-full overflow-hidden rounded-2xl border border-white/20">
+
+      <!-- Left logo panel -->
+      <div
+        class="hidden w-1/2 items-center justify-center bg-white/5 p-8 backdrop-blur-md md:flex"
+      >
+        <img
+          src="assets/imgs/PricesIndicatorlogo-removebg-preview.png"
+          alt="Prices Indicator Logo"
+          class="w-full max-w-sm object-contain drop-shadow-2xl"
+        />
+      </div>
+
+      <!-- Divider -->
+      <div class="hidden w-px bg-white/20 md:block"></div>
+
+      <!-- Right panel -->
+      <div class="w-full bg-white/5 p-6 backdrop-blur-xl sm:p-10 md:w-1/2">
+
+        <!-- SIGNUP FORM -->
+        <div *ngIf="!isLogin">
+
+          <h1 class="mb-6 text-3xl font-bold text-white">
+            Signup
+          </h1>
+
+          <!-- Google signup -->
+          <div class="flex w-full justify-center">
+            <div id="googleSignInButton"></div>
+          </div>
+
+          <!-- OR divider -->
+          <div class="my-6 flex items-center gap-4">
+            <span class="h-px flex-1 bg-white/30"></span>
+            <p class="text-sm text-white/70">or</p>
+            <span class="h-px flex-1 bg-white/30"></span>
+          </div>
+
+          <form
+            [formGroup]="isSignupform"
+            (ngSubmit)="signupsubmit()"
+            class="space-y-4"
+          >
+            <input
+              type="text"
+              placeholder="Name"
+              formControlName="name"
+              autocomplete="name"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <input
+              type="email"
+              placeholder="Email"
+              formControlName="email"
+              autocomplete="email"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              formControlName="password"
+              autocomplete="new-password"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              formControlName="confirmpassword"
+              autocomplete="new-password"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <button
+              type="submit"
+              [disabled]="isSignupform.invalid || isLoading"
+              class="w-full rounded-lg bg-blue-900 px-4 py-3 font-semibold text-white shadow-lg transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ isLoading ? 'Creating account...' : 'Create Account' }}
+            </button>
+          </form>
+
+          <!-- Signup error -->
+          <p
+            *ngIf="errorMessage"
+            class="mt-3 text-sm text-red-300"
+            role="alert"
+          >
+            {{ errorMessage }}
+          </p>
+
+          <!-- Switch to login -->
+          <p class="mt-6 text-center text-sm text-white/80">
+            Already registered?
+            <a
+              role="button"
+              tabindex="0"
+              (click)="toggleform()"
+              (keydown.enter)="toggleform()"
+              class="cursor-pointer font-semibold text-amber-400 hover:text-amber-300 hover:underline"
+            >
+              Login
+            </a>
+          </p>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div *ngIf="isLogin">
+
+          <h1 class="mb-6 text-3xl font-bold text-white">
+            Login
+          </h1>
+
+          <!-- Google login -->
+          <div class="flex w-full justify-center">
+            <div id="googleSignInButton"></div>
+          </div>
+
+          <!-- OR divider -->
+          <div class="my-6 flex items-center gap-4">
+            <span class="h-px flex-1 bg-white/30"></span>
+            <p class="text-sm text-white/70">or</p>
+            <span class="h-px flex-1 bg-white/30"></span>
+          </div>
+
+          <form
+            [formGroup]="isloginform"
+            (ngSubmit)="loginsubmit()"
+            class="space-y-4"
+          >
+            <input
+              type="email"
+              placeholder="Email"
+              formControlName="email"
+              autocomplete="email"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              formControlName="password"
+              autocomplete="current-password"
+              class="w-full rounded-lg border border-white/25 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition focus:border-white/60 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
+            />
+
+            <button
+              type="submit"
+              [disabled]="isloginform.invalid || isLoading"
+              class="w-full rounded-lg bg-blue-900 px-4 py-3 font-semibold text-white shadow-lg transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ isLoading ? 'Logging in...' : 'Login' }}
+            </button>
+          </form>
+
+          <!-- Login and Google errors -->
+          <p
+            *ngIf="errorMessage"
+            class="mt-3 text-sm text-red-300"
+            role="alert"
+          >
+            {{ errorMessage }}
+          </p>
+
+          <p
+            *ngIf="successMessage"
+            class="mt-3 text-sm text-emerald-300"
+            role="status"
+          >
+            {{ successMessage }}
+          </p>
+
+          <!-- Switch to signup -->
+          <p class="mt-6 text-center text-sm text-white/80">
+            New here?
+            <a
+              role="button"
+              tabindex="0"
+              (click)="toggleform()"
+              (keydown.enter)="toggleform()"
+              class="cursor-pointer font-semibold text-amber-400 hover:text-amber-300 hover:underline"
+            >
+              Create Account
+            </a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

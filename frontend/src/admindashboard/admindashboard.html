@@ -1,0 +1,195 @@
+
+<div class="min-h-screen bg-[#080808] text-white">
+  <!-- Admin Header -->
+  <header class="sticky top-0 z-20 border-b border-white/10 bg-black/70 backdrop-blur-xl">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-lg font-bold text-[#D4AF37]">
+          P
+        </div>
+        <div>
+          <p class="font-semibold tracking-wide">Prices Indicator</p>
+          <p class="text-xs text-neutral-500">Administration</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="logout()"
+        class="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-neutral-300 transition hover:border-red-400/40 hover:text-red-300"
+      >
+        Log out
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+    <!-- Admin Welcome -->
+    <section class="relative overflow-hidden rounded-3xl border border-[#D4AF37]/25 bg-gradient-to-br from-[#D4AF37]/15 via-[#19160c] to-[#101010] p-7 sm:p-10">
+      <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[#D4AF37]/10 blur-3xl"></div>
+
+      <div class="relative">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-black/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#D4AF37]">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+          Administrator access
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Admin Dashboard
+        </h1>
+
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-neutral-400 sm:text-base">
+          Welcome<span *ngIf="user">, {{ user.name }}</span>.
+          Manage your Prices Indicator platform from your administrator workspace.
+        </p>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-300">
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            Backend authorization verified
+          </span>
+          <span class="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-neutral-400">
+            Restricted workspace
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <div
+      *ngIf="loading"
+      role="status"
+      aria-live="polite"
+      class="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-neutral-400"
+    >
+      Verifying administrator permissions...
+    </div>
+
+    <!-- Error -->
+    <div
+      *ngIf="errorMessage"
+      role="alert"
+      class="mt-8 flex flex-col gap-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span>{{ errorMessage }}</span>
+      <button
+        type="button"
+        (click)="loadAdminAccess()"
+        class="w-fit rounded-lg border border-red-400/30 px-3 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-400/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60"
+      >
+        Try again
+      </button>
+    </div>
+
+    <!-- Admin content -->
+    <section *ngIf="user && !loading" class="mt-8 grid gap-6 lg:grid-cols-3">
+      <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21v-2a8 8 0 0 1 16 0v2"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-semibold">Administrator account</h2>
+            <p class="text-sm text-neutral-500">Authenticated profile</p>
+          </div>
+        </div>
+
+        <div class="mt-6 divide-y divide-white/10">
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="text-sm text-neutral-500">Name</span>
+            <span class="break-all text-sm font-medium">{{ user.name }}</span>
+          </div>
+
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="text-sm text-neutral-500">Email</span>
+            <span class="break-all text-sm font-medium">{{ user.email }}</span>
+          </div>
+
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="text-sm text-neutral-500">Role</span>
+            <span class="w-fit rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/10 px-3 py-1 text-xs font-medium text-[#D4AF37]">
+              {{ user.role }}
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="text-sm text-neutral-500">Email status</span>
+            <span class="text-sm text-emerald-300">
+              {{ user.email_verified ? 'Verified' : 'Not verified' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/[0.04] p-6">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#D4AF37]/10 text-[#D4AF37]">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18M9 4v6"></path>
+          </svg>
+        </div>
+
+        <h2 class="mt-4 font-semibold">Admin workspace</h2>
+        <p class="mt-2 text-sm leading-6 text-neutral-400">
+          Your admin identity has been checked by the FastAPI backend.
+          Connect management tools here as you build them.
+        </p>
+
+        <div class="mt-5 rounded-xl border border-white/10 bg-black/30 p-4">
+          <p class="text-xs text-neutral-500">Administrator ID</p>
+          <p class="mt-1 font-mono text-sm text-neutral-300">{{ user.id }}</p>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Future modules -->
+    <section class="mt-8">
+      <h2 class="text-lg font-semibold">Management modules</h2>
+      <p class="mt-2 text-sm text-neutral-500">
+        These are placeholders for future features; no management actions are connected yet.
+      </p>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <article class="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p class="text-sm font-semibold">User management</p>
+          <p class="mt-2 text-sm leading-6 text-neutral-500">
+            Add protected tools for reviewing user accounts and account status.
+          </p>
+          <span class="mt-4 inline-block rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-400">
+            Planned
+          </span>
+        </article>
+
+        <article class="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p class="text-sm font-semibold">Price data monitoring</p>
+          <p class="mt-2 text-sm leading-6 text-neutral-500">
+            Add monitoring for product prices and scraper health.
+          </p>
+          <span class="mt-4 inline-block rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-400">
+            Planned
+          </span>
+        </article>
+
+        <article class="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p class="text-sm font-semibold">System activity</p>
+          <p class="mt-2 text-sm leading-6 text-neutral-500">
+            Add server-side audit logs and system status reports.
+          </p>
+          <span class="mt-4 inline-block rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-400">
+            Planned
+          </span>
+        </article>
+      </div>
+    </section>
+
+    <footer class="mt-10 border-t border-white/10 pt-5 text-center text-xs text-neutral-600">
+      Prices Indicator · Administrator workspace
+    </footer>
+  </main>
+</div>

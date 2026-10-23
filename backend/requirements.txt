@@ -1,0 +1,14 @@
+
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+python-dotenv
+bcrypt
+python-jose[cryptography]
+google-auth
+email-validator
+httpx
+
+
+# python -m pip install -r requirements.txt

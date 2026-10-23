@@ -1,0 +1,26 @@
+Executing <Task pending name='Task-4' coro=<AuthFlowTests.test_signup_creates_unverified_account_and_sends_otp() running at C:\Users\umarq\OneDrive\Desktop\Prices Indicator\backend\tests\test_auth_flow.py:633> wait_for=<Future pending cb=[BaseProtocol._on_waiter_completed(), Task.task_wakeup()] created at C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py:428> cb=[_run_until_complete_cb() at C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py:181] created at C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py:100> took 0.266 seconds
+F
+======================================================================
+FAIL: test_signup_creates_unverified_account_and_sends_otp (tests.test_auth_flow.AuthFlowTests.test_signup_creates_unverified_account_and_sends_otp)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\unittest\async_case.py", line 90, in _callTestMethod
+    if self._callMaybeAsync(method) is not None:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\unittest\async_case.py", line 112, in _callMaybeAsync
+    return self._asyncioRunner.run(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\umarq\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\umarq\OneDrive\Desktop\Prices Indicator\backend\tests\test_auth_flow.py", line 635, in test_signup_creates_unverified_account_and_sends_otp
+    self.assertEqual(response.status_code, 201)
+AssertionError: 503 != 201
+
+----------------------------------------------------------------------
+Ran 1 test in 0.949s
+
+FAILED (failures=1)

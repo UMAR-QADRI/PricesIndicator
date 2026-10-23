@@ -1,0 +1,243 @@
+
+<div class="min-h-screen flex items-center justify-center bg-[#080808] px-4 py-10 text-white">
+  <div class="w-full max-w-md">
+
+    <!-- Brand -->
+    <div class="mb-8 text-center">
+      <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 shadow-lg shadow-[#D4AF37]/5">
+        <svg
+          class="h-8 w-8 text-[#D4AF37]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          aria-hidden="true"
+        >
+          <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+          <path d="m4 7 8 6 8-6"></path>
+        </svg>
+      </div>
+
+      <p class="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#D4AF37]">
+        Prices Indicator
+      </p>
+
+      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+        Verify your email
+      </h1>
+
+      <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-neutral-400">
+        We've sent a six-digit verification code to
+        <strong *ngIf="email" class="font-medium text-neutral-200">{{ email }}</strong>
+        <span *ngIf="!email">your email address</span>.
+        Enter the code below to securely continue.
+      </p>
+    </div>
+
+    <!-- OTP Card -->
+    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
+
+      <!-- Status Icon -->
+      <div class="mb-6 flex justify-center">
+        <div class="flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/10">
+          <svg
+            class="h-7 w-7 text-[#D4AF37]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <rect x="5" y="10" width="14" height="11" rx="2"></rect>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+            <path d="m9 15 2 2 4-4"></path>
+          </svg>
+        </div>
+      </div>
+
+      <form [formGroup]="otpForm" (ngSubmit)="verifyOTP()">
+
+        <label
+          for="otp"
+          class="mb-3 block text-center text-sm font-medium text-neutral-200"
+        >
+          Enter verification code
+        </label>
+
+        <input
+          id="otp"
+          type="text"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          placeholder="000000"
+          formControlName="otp"
+          aria-describedby="otp-help otp-error"
+          class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-4 text-center text-3xl font-semibold tracking-[0.5em] text-[#D4AF37] outline-none transition placeholder:text-neutral-700 focus:border-[#D4AF37]/70 focus:ring-4 focus:ring-[#D4AF37]/10"
+          [attr.aria-invalid]="otpForm.controls['otp'].touched && otpForm.controls['otp'].invalid"
+        />
+
+        <p
+          id="otp-help"
+          class="mt-3 text-center text-xs text-neutral-500"
+        >
+          Enter all 6 digits from your verification email.
+        </p>
+
+        <!-- Validation Error -->
+        <div
+          id="otp-error"
+          *ngIf="otpForm.controls['otp'].touched && otpForm.controls['otp'].invalid"
+          class="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          Please enter a valid six-digit code.
+        </div>
+
+        <!-- Server Error -->
+        <div
+          *ngIf="errorMessage"
+          class="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          {{ errorMessage }}
+        </div>
+
+        <!-- Success Message -->
+        <div
+          *ngIf="successMessage"
+          class="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+          role="status"
+        >
+          {{ successMessage }}
+        </div>
+
+        <!-- Verify Button -->
+        <button
+          type="submit"
+          [disabled]="isLoading || !hasChallenge"
+          class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EDCF51] to-[#D4AF37] px-5 py-4 text-sm font-bold text-black shadow-lg shadow-[#D4AF37]/10 transition duration-200 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <svg
+            *ngIf="isLoading"
+            class="h-5 w-5 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4z"
+            ></path>
+          </svg>
+
+          <span>
+            {{ isLoading ? 'Verifying code...' : 'Verify & Continue' }}
+          </span>
+
+          <svg
+            *ngIf="!isLoading"
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </button>
+      </form>
+
+      <!-- Resend -->
+      <div class="mt-4 text-center">
+        <button
+          type="button"
+          (click)="resendOTP()"
+          [disabled]="isResending || isLoading || !hasChallenge || resendSeconds > 0"
+          class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#D4AF37] transition hover:bg-[#D4AF37]/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <svg
+            *ngIf="isResending"
+            class="h-4 w-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4z"
+            ></path>
+          </svg>
+
+          {{ isResending ? 'Sending a new code...' : (resendSeconds > 0 ? 'Resend available in ' + resendSeconds + 's' : 'Resend verification code') }}
+        </button>
+      </div>
+
+      <!-- Back to Login -->
+      <div class="mt-6 border-t border-white/10 pt-5 text-center">
+        <button
+          type="button"
+          (click)="backToLogin()"
+          class="inline-flex items-center gap-2 text-sm text-neutral-400 transition hover:text-[#D4AF37]"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path d="m12 19-7-7 7-7"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+          Back to login
+        </button>
+      </div>
+    </div>
+
+    <!-- Security Note -->
+    <div class="mt-6 flex items-start justify-center gap-2 px-3 text-center">
+      <svg
+        class="mt-0.5 h-4 w-4 shrink-0 text-[#D4AF37]/70"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        aria-hidden="true"
+      >
+        <rect x="5" y="10" width="14" height="11" rx="2"></rect>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+      </svg>
+
+      <p class="text-xs leading-5 text-neutral-500">
+        For your security, never share your verification code with anyone.
+        Your code expires after 10 minutes.
+      </p>
+    </div>
+
+    <p class="mt-8 text-center text-xs text-neutral-600">
+      © 2026 Prices Indicator. All rights reserved.
+    </p>
+  </div>
+</div>

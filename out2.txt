@@ -1,0 +1,13 @@
+OTP email delivery failed: unknown
+OTP email delivery failed: network
+OTP email delivery failed: network
+OTP email delivery failed: timeout
+OTP email delivery failed: auth
+OTP email delivery failed: sender
+OTP email delivery failed: network
+OTP email delivery failed: config
+OTP email delivery failed: unknown
+OTP email delivery failed: unknown
+OTP email delivery failed: unknown
+Signup refused: OTP_HMAC_SECRET is not configured.
+Google ID token verification failed: ValueError
