@@ -5,26 +5,33 @@ import secrets
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import bcrypt
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from jose import JWTError, jwt
-from pydantic import BaseModel, Field
-from sqlalchemy import select
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import delete, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from database import Base, engine, get_db
 from email_service import EmailSendError, send_otp_email
-from models import OTPChallenge, User
+from models import LoginEvent, OTPChallenge, User
 from rate_limit import rate_limiter
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -89,9 +96,29 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 @app.on_event("startup")
 async def startup():
-    # Creates missing tables. Existing tables are not migrated by create_all().
+    # create_all() creates missing tables but does not alter existing ones.
+    # These idempotent statements add the admin user-management columns to
+    # databases created by earlier versions without dropping any data.
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        await connection.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                "is_blocked BOOLEAN NOT NULL DEFAULT FALSE"
+            )
+        )
+        await connection.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                "last_login_at TIMESTAMP WITH TIME ZONE"
+            )
+        )
+        await connection.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS "
+                "last_login_method VARCHAR(20)"
+            )
+        )
 
     if not OTP_HMAC_SECRET:
         print(
@@ -127,6 +154,12 @@ class ResendOTPRequest(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     id_token: str = Field(min_length=1)
+
+
+class AdminUserUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    role: Literal["user", "admin"] | None = None
 
 
 # ----------------------------
@@ -197,6 +230,136 @@ def user_response(user: User) -> dict:
         "role": user.role,
         "email_verified": user.email_verified,
     }
+
+
+def account_status(user: User) -> str:
+    if user.is_blocked:
+        return "blocked"
+
+    if not user.email_verified:
+        return "inactive"
+
+    return "active"
+
+
+def authentication_provider(user: User) -> str:
+    providers = []
+
+    if user.password_hash:
+        providers.append("password")
+
+    if user.google_sub:
+        providers.append("google")
+
+    return "+".join(providers) if providers else "unknown"
+
+
+def admin_user_response(user: User) -> dict:
+    # Only expose fields the admin dashboard needs. Password hashes,
+    # Google subject identifiers, OTP data, and tokens stay server-side.
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "email_verified": user.email_verified,
+        "status": account_status(user),
+        "is_blocked": user.is_blocked,
+        "auth_provider": authentication_provider(user),
+        "created_at": user.created_at,
+        "last_login_at": user.last_login_at,
+        "last_login_method": user.last_login_method,
+    }
+
+
+def login_event_response(event: LoginEvent) -> dict:
+    return {
+        "id": event.id,
+        "method": event.method,
+        "logged_in_at": event.logged_in_at,
+    }
+
+
+async def record_successful_login(
+    user: User,
+    method: str,
+    db: AsyncSession,
+) -> None:
+    now = datetime.now(timezone.utc)
+    user.last_login_at = now
+    user.last_login_method = method
+
+    if user.id is None:
+        await db.flush()
+
+    db.add(
+        LoginEvent(
+            user_id=user.id,
+            method=method,
+            logged_in_at=now,
+        )
+    )
+
+
+async def active_admin_count(
+    db: AsyncSession,
+    exclude_user_id: int | None = None,
+) -> int:
+    conditions = [
+        User.role == "admin",
+        User.is_blocked.is_(False),
+        User.email_verified.is_(True),
+    ]
+
+    if exclude_user_id is not None:
+        conditions.append(User.id != exclude_user_id)
+
+    result = await db.execute(
+        select(func.count(User.id)).where(*conditions)
+    )
+
+    return int(result.scalar_one())
+
+
+async def would_remove_last_active_admin(
+    user: User,
+    db: AsyncSession,
+) -> bool:
+    is_active_admin = (
+        user.role == "admin"
+        and not user.is_blocked
+        and user.email_verified
+    )
+
+    if not is_active_admin:
+        return False
+
+    return await active_admin_count(db, exclude_user_id=user.id) == 0
+
+
+async def get_user_or_404(
+    db: AsyncSession,
+    user_id: int,
+) -> User:
+    result = await db.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    return user
+
+
+def promote_allowlisted_admin(user: User) -> None:
+    # ADMIN_EMAILS remains a trusted bootstrap source. It can promote an
+    # account, but never silently demotes an admin managed from the panel.
+    if role_for_email(user.email) == "admin":
+        user.role = "admin"
 
 
 def otp_digest(challenge_id: str, otp: str) -> str:
@@ -356,17 +519,24 @@ async def get_current_user(
             detail="User account not found.",
         )
 
+    # Stateless JWTs are checked against the current account row on every
+    # request, so blocking or deleting an account invalidates existing tokens.
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been blocked.",
+        )
+
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email verification is required.",
         )
 
-    # Recalculate the role from the server's admin allowlist.
-    # The client never decides its own role.
-    correct_role = role_for_email(user.email)
-    if user.role != correct_role:
-        user.role = correct_role
+    # The server's allowlist can promote an account, but role edits made in
+    # the admin panel are persisted and are not overwritten on every request.
+    if role_for_email(user.email) == "admin" and user.role != "admin":
+        user.role = "admin"
         await db.commit()
         await db.refresh(user)
 
@@ -418,8 +588,11 @@ async def signup(
     )
     existing_user = result.scalar_one_or_none()
 
-    if existing_user and existing_user.email_verified:
-        # Generic response so an attacker cannot probe which emails exist.
+    if existing_user and (
+        existing_user.email_verified or existing_user.is_blocked
+    ):
+        # Generic response so an attacker cannot probe which emails exist,
+        # and blocked accounts cannot restart verification.
         return JSONResponse(
             status_code=200,
             content={
@@ -435,7 +608,7 @@ async def signup(
         user = existing_user
         user.name = name
         user.password_hash = hash_password(data.password)
-        user.role = role_for_email(email)
+        promote_allowlisted_admin(user)
         await db.commit()
         await db.refresh(user)
     else:
@@ -501,6 +674,12 @@ async def login(
             detail="Invalid email or password.",
         )
 
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been blocked.",
+        )
+
     if not user.email_verified:
         raise HTTPException(
             status_code=403,
@@ -508,7 +687,8 @@ async def login(
         )
 
     # Password login is the only factor after email verification.
-    user.role = role_for_email(user.email)
+    promote_allowlisted_admin(user)
+    await record_successful_login(user, "password", db)
     await db.commit()
     await db.refresh(user)
 
@@ -558,6 +738,12 @@ async def resend_otp(
                 "This verification session is no longer valid. "
                 "Please start signup again."
             ),
+        )
+
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been blocked.",
         )
 
     enforce_rate_limit("resend", request, user.email, RATE_LIMIT_RESEND)
@@ -705,9 +891,17 @@ async def verify_otp(
             detail="User account not found.",
         )
 
+    if user.is_blocked:
+        challenge.consumed = True
+        await db.commit()
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been blocked.",
+        )
+
     challenge.consumed = True
     user.email_verified = True
-    user.role = role_for_email(user.email)
+    promote_allowlisted_admin(user)
 
     await db.commit()
     await db.refresh(user)
@@ -771,6 +965,12 @@ async def google_login(
         )
         user = result.scalar_one_or_none()
 
+    if user is not None and user.is_blocked:
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been blocked.",
+        )
+
     if user is None:
         user = User(
             name=name[:100] or "User",
@@ -791,11 +991,12 @@ async def google_login(
 
         user.google_sub = google_sub
         user.email_verified = True
-        user.role = role_for_email(user.email)
+        promote_allowlisted_admin(user)
 
         if not user.name and name:
             user.name = name[:100]
 
+    await record_successful_login(user, "google", db)
     await db.commit()
     await db.refresh(user)
 
@@ -829,6 +1030,318 @@ async def admin_check(
     return {
         "message": "Admin access verified.",
         "user": user_response(admin),
+    }
+
+
+# ----------------------------
+# Admin user management
+# ----------------------------
+
+@app.get("/admin/users")
+async def list_admin_users(
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    search: Annotated[str | None, Query(max_length=100)] = None,
+    status_filter: Annotated[
+        Literal["all", "active", "blocked", "inactive"],
+        Query(alias="status"),
+    ] = "all",
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 10,
+):
+    filters = []
+    search_term = (search or "").strip()
+
+    if search_term:
+        pattern = f"%{search_term}%"
+        conditions = [
+            User.name.ilike(pattern),
+            User.email.ilike(pattern),
+        ]
+
+        if search_term.isdigit():
+            conditions.append(User.id == int(search_term))
+
+        filters.append(or_(*conditions))
+
+    if status_filter == "active":
+        filters.extend(
+            [
+                User.is_blocked.is_(False),
+                User.email_verified.is_(True),
+            ]
+        )
+    elif status_filter == "blocked":
+        filters.append(User.is_blocked.is_(True))
+    elif status_filter == "inactive":
+        filters.extend(
+            [
+                User.is_blocked.is_(False),
+                User.email_verified.is_(False),
+            ]
+        )
+
+    base_query = select(User)
+
+    if filters:
+        base_query = base_query.where(*filters)
+
+    total_result = await db.execute(
+        select(func.count()).select_from(base_query.subquery())
+    )
+    total = int(total_result.scalar_one())
+
+    result = await db.execute(
+        base_query
+        .order_by(User.created_at.desc(), User.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    users = list(result.scalars().all())
+    pages = max(1, (total + page_size - 1) // page_size)
+
+    return {
+        "items": [admin_user_response(user) for user in users],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": pages,
+    }
+
+
+@app.get("/admin/users/{user_id}")
+async def get_admin_user_detail(
+    user_id: int,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    user = await get_user_or_404(db, user_id)
+    return admin_user_response(user)
+
+
+@app.get("/admin/users/{user_id}/logins")
+async def list_user_logins(
+    user_id: int,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+):
+    user = await get_user_or_404(db, user_id)
+
+    total_result = await db.execute(
+        select(func.count(LoginEvent.id)).where(
+            LoginEvent.user_id == user.id
+        )
+    )
+    total = int(total_result.scalar_one())
+
+    result = await db.execute(
+        select(LoginEvent)
+        .where(LoginEvent.user_id == user.id)
+        .order_by(
+            LoginEvent.logged_in_at.desc(),
+            LoginEvent.id.desc(),
+        )
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    events = list(result.scalars().all())
+    pages = max(1, (total + page_size - 1) // page_size)
+
+    return {
+        "items": [login_event_response(event) for event in events],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": pages,
+        "last_login_at": user.last_login_at,
+        "last_login_method": user.last_login_method,
+    }
+
+
+@app.patch("/admin/users/{user_id}")
+async def update_admin_user(
+    user_id: int,
+    data: AdminUserUpdateRequest,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    user = await get_user_or_404(db, user_id)
+    fields_set = data.model_fields_set
+
+    if not fields_set:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No editable fields were provided.",
+        )
+
+    if "name" in fields_set and data.name is not None:
+        name = data.name.strip()
+
+        if not name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Name is required.",
+            )
+
+        user.name = name
+
+    if "email" in fields_set and data.email is not None:
+        email = normalize_email(str(data.email))
+
+        if len(email) > 320:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Email address is too long.",
+            )
+
+        if email != user.email:
+            if user.id == admin.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        "You cannot change your own email address from "
+                        "this panel."
+                    ),
+                )
+
+            duplicate_result = await db.execute(
+                select(User.id).where(
+                    User.email == email,
+                    User.id != user.id,
+                )
+            )
+
+            if duplicate_result.scalar_one_or_none() is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email already exists.",
+                )
+
+            user.email = email
+            user.email_verified = False
+            user.google_sub = None
+            promote_allowlisted_admin(user)
+
+    if "role" in fields_set and data.role is not None:
+        if data.role != user.role:
+            if user.id == admin.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="You cannot change your own role.",
+                )
+
+            if data.role == "user":
+                if role_for_email(user.email) == "admin":
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            "This account is an administrator through "
+                            "the server allowlist and cannot be demoted "
+                            "here."
+                        ),
+                    )
+
+                if await would_remove_last_active_admin(user, db):
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="The last active administrator cannot be demoted.",
+                    )
+
+            user.role = data.role
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists.",
+        )
+
+    await db.refresh(user)
+    return admin_user_response(user)
+
+
+@app.post("/admin/users/{user_id}/block")
+async def block_admin_user(
+    user_id: int,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    user = await get_user_or_404(db, user_id)
+
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot block your own account.",
+        )
+
+    if not user.is_blocked:
+        if await would_remove_last_active_admin(user, db):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="The last active administrator cannot be blocked.",
+            )
+
+        user.is_blocked = True
+        await db.commit()
+        await db.refresh(user)
+
+    return admin_user_response(user)
+
+
+@app.post("/admin/users/{user_id}/unblock")
+async def unblock_admin_user(
+    user_id: int,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    user = await get_user_or_404(db, user_id)
+
+    if user.is_blocked:
+        user.is_blocked = False
+        await db.commit()
+        await db.refresh(user)
+
+    return admin_user_response(user)
+
+
+@app.delete("/admin/users/{user_id}")
+async def delete_admin_user(
+    user_id: int,
+    admin: Annotated[User, Depends(get_admin_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    user = await get_user_or_404(db, user_id)
+
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account.",
+        )
+
+    if await would_remove_last_active_admin(user, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The last active administrator cannot be deleted.",
+        )
+
+    # Delete dependent records explicitly, then the user row. No unrelated
+    # tables are touched.
+    await db.execute(
+        delete(LoginEvent).where(LoginEvent.user_id == user.id)
+    )
+    await db.execute(
+        delete(OTPChallenge).where(OTPChallenge.user_id == user.id)
+    )
+    await db.execute(delete(User).where(User.id == user.id))
+    await db.commit()
+
+    return {
+        "message": "User deleted successfully.",
+        "user_id": user_id,
     }
 
 

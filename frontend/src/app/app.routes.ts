@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-
 import { AdminDashboard } from '../admindashboard/admindashboard';
 import { Auth } from '../auth/auth';
 import { adminGuard, authGuard } from '../auth/auth.guard';
@@ -22,8 +21,7 @@ export const routes: Routes = [
   },
 
   // Backwards-compatible aliases for links created by earlier builds.
-  { path: 'userdashboard', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'admindashboard', redirectTo: 'admin', pathMatch: 'full' },
+
 
   { path: '', redirectTo: 'auth', pathMatch: 'full' },
   { path: '**', redirectTo: 'auth' }

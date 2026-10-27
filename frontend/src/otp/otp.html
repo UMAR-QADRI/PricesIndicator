@@ -1,10 +1,10 @@
 
-<div class="min-h-screen flex items-center justify-center bg-[#080808] px-4 py-10 text-white">
+<div class="min-h-screen flex items-center justify-center bg-[#071426] px-4 py-10 text-white">
   <div class="w-full max-w-md">
 
     <!-- Brand -->
     <div class="mb-8 text-center">
-      <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 shadow-lg shadow-[#D4AF37]/5">
+      <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 shadow-lg shadow-black/20">
         <svg
           class="h-8 w-8 text-[#D4AF37]"
           viewBox="0 0 24 24"
@@ -26,20 +26,20 @@
         Verify your email
       </h1>
 
-      <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-neutral-400">
+      <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-400">
         We've sent a six-digit verification code to
-        <strong *ngIf="email" class="font-medium text-neutral-200">{{ email }}</strong>
+        <strong *ngIf="email" class="font-medium text-slate-100">{{ email }}</strong>
         <span *ngIf="!email">your email address</span>.
         Enter the code below to securely continue.
       </p>
     </div>
 
     <!-- OTP Card -->
-    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8">
+    <div class="rounded-3xl border border-slate-700/70 bg-[#10213A] p-6 shadow-2xl shadow-black/30 sm:p-8">
 
       <!-- Status Icon -->
       <div class="mb-6 flex justify-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/20 bg-[#D4AF37]/10">
+        <div class="flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10">
           <svg
             class="h-7 w-7 text-[#D4AF37]"
             viewBox="0 0 24 24"
@@ -59,7 +59,7 @@
 
         <label
           for="otp"
-          class="mb-3 block text-center text-sm font-medium text-neutral-200"
+          class="mb-3 block text-center text-sm font-medium text-slate-200"
         >
           Enter verification code
         </label>
@@ -73,13 +73,13 @@
           placeholder="000000"
           formControlName="otp"
           aria-describedby="otp-help otp-error"
-          class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-4 text-center text-3xl font-semibold tracking-[0.5em] text-[#D4AF37] outline-none transition placeholder:text-neutral-700 focus:border-[#D4AF37]/70 focus:ring-4 focus:ring-[#D4AF37]/10"
+          class="w-full rounded-xl border border-slate-600/70 bg-[#071426] px-4 py-4 text-center text-3xl font-semibold tracking-[0.5em] text-[#D4AF37] outline-none transition placeholder:text-slate-600 focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/10"
           [attr.aria-invalid]="otpForm.controls['otp'].touched && otpForm.controls['otp'].invalid"
         />
 
         <p
           id="otp-help"
-          class="mt-3 text-center text-xs text-neutral-500"
+          class="mt-3 text-center text-xs text-slate-400"
         >
           Enter all 6 digits from your verification email.
         </p>
@@ -88,7 +88,7 @@
         <div
           id="otp-error"
           *ngIf="otpForm.controls['otp'].touched && otpForm.controls['otp'].invalid"
-          class="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          class="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           role="alert"
         >
           Please enter a valid six-digit code.
@@ -97,7 +97,7 @@
         <!-- Server Error -->
         <div
           *ngIf="errorMessage"
-          class="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          class="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           role="alert"
         >
           {{ errorMessage }}
@@ -106,7 +106,7 @@
         <!-- Success Message -->
         <div
           *ngIf="successMessage"
-          class="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+          class="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
           role="status"
         >
           {{ successMessage }}
@@ -116,7 +116,7 @@
         <button
           type="submit"
           [disabled]="isLoading || !hasChallenge"
-          class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EDCF51] to-[#D4AF37] px-5 py-4 text-sm font-bold text-black shadow-lg shadow-[#D4AF37]/10 transition duration-200 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#EDCF51] to-[#D4AF37] px-5 py-4 text-sm font-bold text-[#071426] shadow-lg shadow-black/20 transition duration-200 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <svg
             *ngIf="isLoading"
@@ -159,7 +159,7 @@
         </button>
       </form>
 
-      <!-- Resend -->
+      <!-- Resend OTP -->
       <div class="mt-4 text-center">
         <button
           type="button"
@@ -194,11 +194,11 @@
       </div>
 
       <!-- Back to Login -->
-      <div class="mt-6 border-t border-white/10 pt-5 text-center">
+      <div class="mt-6 border-t border-slate-700/70 pt-5 text-center">
         <button
           type="button"
           (click)="backToLogin()"
-          class="inline-flex items-center gap-2 text-sm text-neutral-400 transition hover:text-[#D4AF37]"
+          class="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-[#D4AF37]"
         >
           <svg
             class="h-4 w-4"
@@ -219,7 +219,7 @@
     <!-- Security Note -->
     <div class="mt-6 flex items-start justify-center gap-2 px-3 text-center">
       <svg
-        class="mt-0.5 h-4 w-4 shrink-0 text-[#D4AF37]/70"
+        class="mt-0.5 h-4 w-4 shrink-0 text-[#D4AF37]/80"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -230,13 +230,13 @@
         <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
       </svg>
 
-      <p class="text-xs leading-5 text-neutral-500">
+      <p class="text-xs leading-5 text-slate-400">
         For your security, never share your verification code with anyone.
         Your code expires after 10 minutes.
       </p>
     </div>
 
-    <p class="mt-8 text-center text-xs text-neutral-600">
+    <p class="mt-8 text-center text-xs text-slate-500">
       © 2026 Prices Indicator. All rights reserved.
     </p>
   </div>

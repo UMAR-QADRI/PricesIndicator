@@ -19,6 +19,13 @@ describe('AdminDashboard', () => {
 
   const authStub = {
     checkAdminAccess: () => of({ message: 'Admin access verified.', user: admin }),
+    getAdminUsers: () => of({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      pages: 1
+    }),
     clearSession: () => undefined,
     logout: () => undefined
   };

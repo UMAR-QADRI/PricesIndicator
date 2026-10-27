@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import {
   HttpClient,
-  HttpHeaders
+  HttpHeaders,
+  HttpParams
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -20,6 +21,52 @@ export interface AuthUser {
   email: string;
   role: 'admin' | 'user';
   email_verified: boolean;
+}
+
+export type AdminUserStatus = 'active' | 'blocked' | 'inactive';
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+  email_verified: boolean;
+  status: AdminUserStatus;
+  is_blocked: boolean;
+  auth_provider: string;
+  created_at: string;
+  last_login_at: string | null;
+  last_login_method: string | null;
+}
+
+export interface AdminUserPage {
+  items: AdminUser[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+}
+
+export interface AdminLoginEvent {
+  id: number;
+  method: string;
+  logged_in_at: string;
+}
+
+export interface AdminLoginHistory {
+  items: AdminLoginEvent[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+  last_login_at: string | null;
+  last_login_method: string | null;
+}
+
+export interface AdminUserUpdate {
+  name?: string;
+  email?: string;
+  role?: 'admin' | 'user';
 }
 
 @Injectable({
@@ -93,6 +140,96 @@ export class AuthServ {
       user: AuthUser;
     }>(
       `${this.apiUrl}/admin/check`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  getAdminUsers(options: {
+    search?: string;
+    status?: AdminUserStatus | 'all';
+    page?: number;
+    pageSize?: number;
+  } = {}): Observable<AdminUserPage> {
+    let params = new HttpParams()
+      .set('page', String(options.page ?? 1))
+      .set('page_size', String(options.pageSize ?? 10))
+      .set('status', options.status ?? 'all');
+
+    const search = options.search?.trim();
+
+    if (search) {
+      params = params.set('search', search);
+    }
+
+    return this.http.get<AdminUserPage>(
+      `${this.apiUrl}/admin/users`,
+      {
+        headers: this.getAuthHeaders(),
+        params
+      }
+    );
+  }
+
+  getAdminUser(userId: number): Observable<AdminUser> {
+    return this.http.get<AdminUser>(
+      `${this.apiUrl}/admin/users/${userId}`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  getAdminUserLogins(
+    userId: number,
+    options: { page?: number; pageSize?: number } = {}
+  ): Observable<AdminLoginHistory> {
+    const params = new HttpParams()
+      .set('page', String(options.page ?? 1))
+      .set('page_size', String(options.pageSize ?? 20));
+
+    return this.http.get<AdminLoginHistory>(
+      `${this.apiUrl}/admin/users/${userId}/logins`,
+      {
+        headers: this.getAuthHeaders(),
+        params
+      }
+    );
+  }
+
+  updateAdminUser(
+    userId: number,
+    data: AdminUserUpdate
+  ): Observable<AdminUser> {
+    return this.http.patch<AdminUser>(
+      `${this.apiUrl}/admin/users/${userId}`,
+      data,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  blockAdminUser(userId: number): Observable<AdminUser> {
+    return this.http.post<AdminUser>(
+      `${this.apiUrl}/admin/users/${userId}/block`,
+      {},
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  unblockAdminUser(userId: number): Observable<AdminUser> {
+    return this.http.post<AdminUser>(
+      `${this.apiUrl}/admin/users/${userId}/unblock`,
+      {},
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  deleteAdminUser(userId: number): Observable<{
+    message: string;
+    user_id: number;
+  }> {
+    return this.http.delete<{
+      message: string;
+      user_id: number;
+    }>(
+      `${this.apiUrl}/admin/users/${userId}`,
       { headers: this.getAuthHeaders() }
     );
   }

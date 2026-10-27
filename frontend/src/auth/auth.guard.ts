@@ -27,7 +27,7 @@ export const adminGuard: CanActivateFn = () => {
     map((user) =>
       user.role === 'admin'
         ? true
-        : router.createUrlTree(['/admindashboard'])
+        : router.createUrlTree(['/dashboard'])
     ),
     catchError(() => {
       auth.clearSession();

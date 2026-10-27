@@ -943,14 +943,22 @@ class AuthFlowTests(unittest.IsolatedAsyncioTestCase):
     async def test_signup_retry_after_failure_succeeds(self):
         email = "retry-after-failure@example.com"
 
-        async def failing_send(email: str, otp: str) -> None:
+        async def failing_send(
+            email: str,
+            otp: str,
+            name: str = "",
+        ) -> None:
             raise EmailSendError("network")
 
         main.send_otp_email = failing_send
         first = await self.signup(email)
         self.assert_generic_failure(first)
 
-        async def recovering_send(email: str, otp: str) -> None:
+        async def recovering_send(
+            email: str,
+            otp: str,
+            name: str = "",
+        ) -> None:
             self.sent_emails.append({"email": email, "otp": otp})
 
         main.send_otp_email = recovering_send
