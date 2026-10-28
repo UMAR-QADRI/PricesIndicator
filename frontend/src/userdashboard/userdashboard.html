@@ -1,61 +1,53 @@
-
-<div class="min-h-screen bg-[#071426] text-slate-100 selection:bg-amber-400/30">
+<div class="min-h-screen bg-[#071426] text-slate-100">
   <!-- Header -->
-  <header class="sticky top-0 z-20 border-b border-white/[0.08] bg-[#071426]/90 shadow-lg shadow-black/10 backdrop-blur-2xl">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-      <a routerLink="/dashboard" class="group flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/30 bg-gradient-to-br from-amber-300/20 to-amber-600/5 text-xl font-bold text-amber-300 shadow-lg shadow-amber-500/5 transition duration-300 group-hover:scale-105 group-hover:border-amber-300/70 group-hover:shadow-amber-400/10">
-          P
-        </div>
-        <div>
-          <p class="font-semibold tracking-wide text-white transition group-hover:text-amber-200">Prices Indicator</p>
-          <p class="text-xs text-slate-400">User workspace</p>
+  <header class="sticky top-0 z-30 border-b border-white/10 bg-[#071426]">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <a routerLink="/dashboard" class="flex min-w-0 items-center gap-3">
+        <img
+          src="/assets/imgs/PricesIndicatorlogo-removebg-preview.png"
+          alt="Prices Indicator"
+          class="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
+        />
+
+        <div class="min-w-0">
+          <p class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">
+            Prices Indicator
+          </p>
+          <p class="mt-0.5 text-xs text-slate-400">User dashboard</p>
         </div>
       </a>
 
       <button
         type="button"
         (click)="logout()"
-        class="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-slate-300 transition duration-200 hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-rose-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60"
+        class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-sm text-slate-300 transition hover:border-rose-400/40 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400/40 sm:px-4"
       >
-        <svg class="h-4 w-4 transition-transform group-hover:-translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M10 17l5-5-5-5M15 12H3"/>
-          <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>
+        <svg
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <path d="M10 17l5-5-5-5M15 12H3" />
+          <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
         </svg>
-        Log out
+        <span>Log out</span>
       </button>
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+
     <!-- Welcome -->
-    <section class="group relative isolate overflow-hidden rounded-3xl border border-amber-300/15 bg-gradient-to-br from-[#132b4b] via-[#10213a] to-[#0b1729] p-7 shadow-2xl shadow-black/20 sm:p-10">
-      <div class="pointer-events-none absolute -right-16 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/[0.09] blur-3xl transition duration-700 group-hover:bg-amber-400/[0.15]"></div>
-      <div class="pointer-events-none absolute -bottom-24 -left-12 -z-10 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl"></div>
+    <section class="border-b border-white/10 pb-6">
+      <h1 class="mt-1 break-words text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        Welcome<span *ngIf="user">, {{ user.name }}</span>
+      </h1>
 
-      <div class="relative">
-        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/[0.07] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
-          <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>
-          Personal dashboard
-        </div>
-
-        <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Welcome<span *ngIf="user">, <span class="text-amber-300">{{ user.name }}</span></span>
-        </h1>
-
-        <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-          Your account is ready. Access your Prices Indicator workspace
-          and stay informed about product prices.
-        </p>
-
-        <div class="mt-7 inline-flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.07] px-4 py-3 text-sm font-medium text-emerald-300">
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40"></span>
-            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-          </span>
-          Authenticated user
-        </div>
-      </div>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+        Manage your account details and access your Prices Indicator workspace.
+      </p>
     </section>
 
     <!-- Loading -->
@@ -63,120 +55,215 @@
       *ngIf="loading"
       role="status"
       aria-live="polite"
-      class="mt-8 flex items-center gap-4 rounded-2xl border border-blue-300/15 bg-[#10213a] p-6 text-sm text-slate-300"
+      class="mt-6 flex items-center gap-3 rounded-xl border border-white/10 bg-[#0c1d33] p-4 text-sm text-slate-300"
     >
-      <svg class="h-5 w-5 animate-spin text-amber-300" viewBox="0 0 24 24" fill="none">
-        <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"/>
-        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <svg
+        class="h-5 w-5 shrink-0 animate-spin text-amber-400"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+          stroke="currentColor"
+          stroke-width="3"
+          opacity=".25"
+        />
+        <path
+          d="M21 12a9 9 0 0 0-9-9"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
       </svg>
-      Loading your account...
+      <span>Loading your account...</span>
     </div>
 
     <!-- Error -->
     <div
       *ngIf="errorMessage"
       role="alert"
-      class="mt-8 flex flex-col gap-4 rounded-2xl border border-rose-400/20 bg-rose-400/[0.07] p-5 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between"
+      class="mt-6 flex flex-col gap-3 rounded-xl border border-rose-400/25 bg-rose-400/5 p-4 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between"
     >
-      <span>{{ errorMessage }}</span>
+      <span class="break-words">{{ errorMessage }}</span>
+
       <button
         type="button"
         (click)="loadAccount()"
-        class="w-fit rounded-lg border border-rose-300/25 bg-rose-300/[0.05] px-4 py-2.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-300/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/60"
+        class="w-fit shrink-0 rounded-lg border border-rose-400/30 px-3 py-2 transition hover:bg-rose-400/10 focus:outline-none focus:ring-2 focus:ring-rose-400/40"
       >
-        Try again ↻
+        Try again
       </button>
     </div>
 
-    <!-- Account -->
-    <section *ngIf="user && !loading" class="mt-8 grid items-start gap-6 lg:grid-cols-3">
-      <!-- Profile card -->
-      <div class="rounded-2xl border border-white/[0.09] bg-gradient-to-br from-[#10213a] to-[#0b192c] p-6 shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-0.5 hover:border-amber-300/20 hover:shadow-2xl hover:shadow-black/20 sm:p-7 lg:col-span-2">
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-300/15 bg-amber-300/[0.08] text-amber-300 transition duration-300 hover:bg-amber-300/15">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 21v-2a8 8 0 0 1 16 0v2"/>
+    <!-- Account information -->
+    <section
+      *ngIf="user && !loading"
+      class="mt-6 grid min-w-0 gap-5 lg:grid-cols-[1.6fr_1fr]"
+    >
+
+      <!-- Profile -->
+      <article class="min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6">
+        <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
             </svg>
           </div>
-          <div>
+
+          <div class="min-w-0">
             <h2 class="font-semibold text-white">Account information</h2>
-            <p class="mt-1 text-sm text-slate-400">Your profile details</p>
+            <p class="mt-1 text-xs text-slate-400">
+              Your registered profile details
+            </p>
           </div>
         </div>
 
-        <div class="mt-7 divide-y divide-white/[0.07]">
-          <div class="flex flex-col gap-2 rounded-lg px-3 py-4 transition hover:bg-white/[0.025] sm:flex-row sm:items-center sm:justify-between">
-            <span class="text-sm text-slate-400">Full name</span>
-            <span class="break-all text-sm font-medium text-slate-100">{{ user.name }}</span>
+        <dl class="divide-y divide-white/[0.07]">
+
+          <!-- Name -->
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <dt class="text-sm text-slate-400">Full name</dt>
+            <dd class="break-words text-sm font-medium text-slate-100 sm:text-right">
+              {{ user.name }}
+            </dd>
           </div>
 
-          <div class="flex flex-col gap-2 rounded-lg px-3 py-4 transition hover:bg-white/[0.025] sm:flex-row sm:items-center sm:justify-between">
-            <span class="text-sm text-slate-400">Email address</span>
-            <span class="break-all text-sm font-medium text-slate-100">{{ user.email }}</span>
+          <!-- Email -->
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <dt class="text-sm text-slate-400">Email address</dt>
+            <dd class="break-all text-sm text-slate-100 sm:max-w-[65%] sm:text-right">
+              {{ user.email }}
+            </dd>
           </div>
 
-          <div class="flex flex-col gap-2 rounded-lg px-3 py-4 transition hover:bg-white/[0.025] sm:flex-row sm:items-center sm:justify-between">
-            <span class="text-sm text-slate-400">Account role</span>
-            <span class="w-fit rounded-lg border border-blue-300/20 bg-blue-400/[0.08] px-3 py-1.5 text-xs font-semibold capitalize text-blue-200">
-              {{ user.role }}
-            </span>
+          <!-- Role -->
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <dt class="text-sm text-slate-400">Account role</dt>
+            <dd>
+              <span class="inline-flex w-fit rounded-md border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold capitalize text-amber-300">
+                {{ user.role }}
+              </span>
+            </dd>
           </div>
 
-          <div class="flex flex-col gap-2 rounded-lg px-3 py-4 transition hover:bg-white/[0.025] sm:flex-row sm:items-center sm:justify-between">
-            <span class="text-sm text-slate-400">Email verification</span>
-            <span
-              class="inline-flex w-fit items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold"
-              [ngClass]="user.email_verified
-                ? 'border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-300'
-                : 'border-amber-400/20 bg-amber-400/[0.08] text-amber-300'"
+          <!-- Email verification -->
+          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <dt class="text-sm text-slate-400">Email verification</dt>
+            <dd>
+              <span
+                class="inline-flex w-fit items-center gap-2 text-sm"
+                [ngClass]="user.email_verified ? 'text-emerald-300' : 'text-amber-300'"
+              >
+                <!-- <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  [ngClass]="user.email_verified ? 'bg-emerald-400' : 'bg-amber-400'"
+                ></span> -->
+
+                {{ user.email_verified ? 'Verified' : 'Not verified' }}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </article>
+
+      <!-- Account security -->
+      <aside class="min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6">
+        <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
+            <svg
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
             >
-              <span class="h-1.5 w-1.5 rounded-full" [ngClass]="user.email_verified ? 'bg-emerald-400' : 'bg-amber-400'"></span>
-              {{ user.email_verified ? 'Verified' : 'Not verified' }}
-            </span>
+              <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </div>
+
+          <div>
+            <h2 class="font-semibold text-white">Account security</h2>
+            <p class="mt-1 text-xs text-slate-400">Your account access details</p>
           </div>
         </div>
-      </div>
 
-      <!-- Security card -->
-      <aside class="rounded-2xl border border-white/[0.09] bg-gradient-to-br from-[#10213a] to-[#0b192c] p-6 shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-0.5 hover:border-amber-300/20 sm:p-7">
-        <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-amber-300/15 bg-amber-300/[0.08] text-amber-300">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-            <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z"/>
-            <path d="m9 12 2 2 4-4"/>
-          </svg>
-        </div>
-
-        <h2 class="mt-5 font-semibold text-white">Account security</h2>
-        <p class="mt-2 text-sm leading-7 text-slate-400">
-          Your profile is loaded from the authenticated API. Keep your
-          account credentials and verification codes private.
+        <p class="mt-4 text-sm leading-6 text-slate-400">
+          Keep your account credentials and email verification codes private.
+          Always log out when using a shared device.
         </p>
 
-        <div class="mt-6 rounded-xl border border-white/[0.08] bg-black/20 p-4 transition hover:border-amber-300/20">
-          <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Account ID</p>
-          <p class="mt-2 break-all font-mono text-sm text-amber-200">{{ user.id }}</p>
+        <!-- Account ID -->
+        <div class="mt-5 rounded-lg border border-white/10 bg-[#071426] p-4">
+          <p class="text-xs text-slate-400">Account ID</p>
+          <p class="mt-2 break-all font-mono text-sm text-amber-300">
+            {{ user.id }}
+          </p>
         </div>
 
-        <div class="mt-4 flex items-start gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4">
-          <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="m5 12 4 4L19 6"/>
+        <!-- Verification status -->
+        <div
+          class="mt-4 flex items-start gap-3 rounded-lg border p-4"
+          [ngClass]="user.email_verified
+            ? 'border-emerald-400/20 bg-emerald-400/5'
+            : 'border-amber-400/20 bg-amber-400/5'"
+        >
+          <svg
+            *ngIf="user.email_verified"
+            class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path d="m5 12 4 4L19 6" />
           </svg>
-          <div>
-            <p class="text-sm font-medium text-emerald-200">Protected workspace</p>
-            <p class="mt-1 text-xs leading-5 text-slate-400">Keep your sign-in details private and secure.</p>
+
+          <svg
+            *ngIf="!user.email_verified"
+            class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4m0 4h.01" />
+          </svg>
+
+          <div class="min-w-0">
+            <p
+              class="text-sm font-medium"
+              [ngClass]="user.email_verified ? 'text-emerald-300' : 'text-amber-300'"
+            >
+              {{ user.email_verified ? 'Email verified' : 'Email not verified' }}
+            </p>
+
+            <p class="mt-1 text-xs leading-5 text-slate-400">
+              {{
+                user.email_verified
+                  ? 'Your email address has been verified.'
+                  : 'Your email address has not yet been verified.'
+              }}
+            </p>
           </div>
         </div>
       </aside>
     </section>
 
     <!-- Footer -->
-    <footer class="mt-10 flex flex-col items-center justify-between gap-2 border-t border-white/[0.08] pt-6 text-xs text-slate-500 sm:flex-row">
-      <span>© Prices Indicator · User workspace</span>
-      <span class="flex items-center gap-2">
-        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-        Your workspace
-      </span>
+    <footer class="mt-10 flex flex-col gap-2 border-t border-white/10 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <span>Prices Indicator · User dashboard</span>
+      <span>Account information</span>
     </footer>
   </main>
 </div>

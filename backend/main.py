@@ -935,7 +935,12 @@ async def google_login(
             GOOGLE_CLIENT_ID,
         )
     except Exception as exc:
+        import traceback
+
         print(f"Google ID token verification failed: {type(exc).__name__}")
+        print(f"Error details: {exc}")
+        traceback.print_exc()
+
         raise HTTPException(
             status_code=401,
             detail="Google token is invalid or expired. Please try again.",
