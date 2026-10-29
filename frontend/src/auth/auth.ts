@@ -258,6 +258,12 @@ export class Auth implements AfterViewInit {
     });
   }
 
+  openForgotPassword(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+    void this.router.navigate(['/forgot-password']);
+  }
+
   toggleform(): void {
     this.isLogin = !this.isLogin;
     this.errorMessage = '';

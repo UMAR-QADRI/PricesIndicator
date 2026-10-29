@@ -24,14 +24,23 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import delete, func, or_, select, text
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from database import Base, engine, get_db
-from email_service import EmailSendError, send_otp_email
-from models import LoginEvent, OTPChallenge, User
+from email_service import (
+    EmailSendError,
+    send_otp_email,
+    send_password_reset_email,
+)
+from models import (
+    LoginEvent,
+    OTPChallenge,
+    PasswordResetChallenge,
+    User,
+)
 from rate_limit import rate_limiter
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -58,6 +67,7 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 OTP_HMAC_SECRET = os.getenv("OTP_HMAC_SECRET", "").strip()
 OTP_EXPIRY_MINUTES = 10
+RESET_TOKEN_EXPIRY_MINUTES = 10
 
 OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_COOLDOWN_SECONDS = int(
@@ -68,6 +78,8 @@ RATE_LIMIT_SIGNUP = (10, 60)
 RATE_LIMIT_LOGIN = (10, 60)
 RATE_LIMIT_VERIFY = (20, 60)
 RATE_LIMIT_RESEND = (10, 60)
+RATE_LIMIT_FORGOT = (5, 60)
+RATE_LIMIT_RESET = (10, 60)
 
 ADMIN_EMAILS = {
     email.strip().lower()
@@ -150,6 +162,15 @@ class VerifyOTPRequest(BaseModel):
 
 class ResendOTPRequest(BaseModel):
     challenge_id: str = Field(min_length=1, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str = Field(min_length=1, max_length=256)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class GoogleLoginRequest(BaseModel):
@@ -362,11 +383,15 @@ def promote_allowlisted_admin(user: User) -> None:
         user.role = "admin"
 
 
-def otp_digest(challenge_id: str, otp: str) -> str:
+def otp_digest(
+    challenge_id: str,
+    otp: str,
+    unavailable_detail: str = "Signup is temporarily unavailable.",
+) -> str:
     if not OTP_HMAC_SECRET:
         raise HTTPException(
             status_code=503,
-            detail="Signup is temporarily unavailable.",
+            detail=unavailable_detail,
         )
 
     return hmac.new(
@@ -374,6 +399,26 @@ def otp_digest(challenge_id: str, otp: str) -> str:
         f"{challenge_id}:{otp}".encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+
+def reset_token_digest(token: str) -> str:
+    if not OTP_HMAC_SECRET:
+        raise HTTPException(
+            status_code=503,
+            detail="Password recovery is temporarily unavailable.",
+        )
+
+    return hmac.new(
+        OTP_HMAC_SECRET.encode("utf-8"),
+        f"password-reset:{token}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
 
 
 def client_ip(request: Request) -> str:
@@ -465,6 +510,70 @@ async def issue_otp(user: User, db: AsyncSession) -> str:
 
     for old_challenge in old_challenges:
         old_challenge.consumed = True
+
+    if old_challenges:
+        await db.commit()
+
+    return challenge_id
+
+
+async def issue_password_reset_otp(
+    user: User,
+    db: AsyncSession,
+) -> str:
+    otp = f"{secrets.randbelow(1_000_000):06d}"
+    challenge_id = secrets.token_urlsafe(32)
+
+    existing = await db.execute(
+        select(PasswordResetChallenge).where(
+            PasswordResetChallenge.user_id == user.id,
+            PasswordResetChallenge.consumed.is_(False),
+        )
+    )
+    old_challenges = list(existing.scalars().all())
+
+    challenge = PasswordResetChallenge(
+        challenge_id=challenge_id,
+        user_id=user.id,
+        otp_hash=otp_digest(
+            challenge_id,
+            otp,
+            "Password recovery is temporarily unavailable.",
+        ),
+        expires_at=(
+            datetime.now(timezone.utc)
+            + timedelta(minutes=OTP_EXPIRY_MINUTES)
+        ),
+        attempts=0,
+        otp_verified=False,
+        consumed=False,
+    )
+
+    db.add(challenge)
+    await db.commit()
+
+    try:
+        await send_password_reset_email(user.email, otp, user.name)
+    except Exception as exc:
+        challenge.consumed = True
+        await db.commit()
+
+        category = (
+            exc.category
+            if isinstance(exc, EmailSendError)
+            else "unknown"
+        )
+        print(f"Password reset email delivery failed: {category}")
+
+        raise HTTPException(
+            status_code=503,
+            detail="Could not send recovery email, try again",
+        ) from exc
+
+    for old_challenge in old_challenges:
+        old_challenge.consumed = True
+        old_challenge.reset_token_hash = None
+        old_challenge.reset_token_expires_at = None
 
     if old_challenges:
         await db.commit()
@@ -909,6 +1018,375 @@ async def verify_otp(
     return {
         "message": "Email verified successfully. You can now log in.",
         "user": user_response(user),
+    }
+
+
+# ----------------------------
+# Forgot password
+# ----------------------------
+
+PASSWORD_RESET_GENERIC_MESSAGE = (
+    "If an account exists for that email, a password reset code has "
+    "been sent."
+)
+
+
+@app.post("/auth/forgot-password")
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    email = normalize_email(data.email)
+
+    enforce_rate_limit("forgot", request, email, RATE_LIMIT_FORGOT)
+
+    response = {
+        "message": PASSWORD_RESET_GENERIC_MESSAGE,
+        "challenge_id": secrets.token_urlsafe(32),
+        "resend_after_seconds": OTP_RESEND_COOLDOWN_SECONDS,
+    }
+
+    if not OTP_HMAC_SECRET:
+        return response
+
+    result = await db.execute(
+        select(User).where(User.email == email)
+    )
+    user = result.scalar_one_or_none()
+
+    # Unknown, blocked, and Google-only accounts receive the same response.
+    # A Google-only account has no local password to reset.
+    if (
+        user is None
+        or user.is_blocked
+        or user.password_hash is None
+    ):
+        return response
+
+    try:
+        challenge_id = await issue_password_reset_otp(user, db)
+    except HTTPException as exc:
+        if exc.status_code == 503:
+            return response
+        raise
+
+    response["challenge_id"] = challenge_id
+    return response
+
+
+@app.post("/auth/resend-password-reset")
+async def resend_password_reset(
+    data: ResendOTPRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(
+        select(PasswordResetChallenge)
+        .where(
+            PasswordResetChallenge.challenge_id
+            == data.challenge_id
+        )
+        .with_for_update()
+    )
+    challenge = result.scalar_one_or_none()
+
+    if (
+        challenge is None
+        or challenge.consumed
+        or challenge.otp_verified
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset session is no longer valid. "
+                "Please start again."
+            ),
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == challenge.user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if (
+        user is None
+        or user.is_blocked
+        or user.password_hash is None
+    ):
+        challenge.consumed = True
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset session is no longer valid. "
+                "Please start again."
+            ),
+        )
+
+    enforce_rate_limit(
+        "reset_resend",
+        request,
+        user.email,
+        RATE_LIMIT_RESEND,
+    )
+
+    latest_result = await db.execute(
+        select(PasswordResetChallenge)
+        .where(PasswordResetChallenge.user_id == user.id)
+        .order_by(
+            PasswordResetChallenge.created_at.desc(),
+            PasswordResetChallenge.id.desc(),
+        )
+        .limit(1)
+    )
+    latest_challenge = latest_result.scalar_one_or_none()
+    now = datetime.now(timezone.utc)
+
+    if latest_challenge is not None:
+        created_at = as_utc(latest_challenge.created_at)
+        elapsed = (now - created_at).total_seconds()
+
+        if elapsed < OTP_RESEND_COOLDOWN_SECONDS:
+            retry_after = max(
+                1,
+                int(OTP_RESEND_COOLDOWN_SECONDS - elapsed),
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "Please wait before requesting another reset code. "
+                    f"Try again in {retry_after} seconds."
+                ),
+                headers={"Retry-After": str(retry_after)},
+            )
+
+    challenge_id = await issue_password_reset_otp(user, db)
+
+    return {
+        "message": "A new password reset code has been sent to your email.",
+        "challenge_id": challenge_id,
+        "resend_after_seconds": OTP_RESEND_COOLDOWN_SECONDS,
+    }
+
+
+@app.post("/auth/verify-password-reset-otp")
+async def verify_password_reset_otp(
+    data: VerifyOTPRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    enforce_rate_limit(
+        "reset_verify",
+        request,
+        "",
+        RATE_LIMIT_VERIFY,
+        include_ip=True,
+    )
+
+    result = await db.execute(
+        select(PasswordResetChallenge)
+        .where(
+            PasswordResetChallenge.challenge_id
+            == data.challenge_id
+        )
+        .with_for_update()
+    )
+    challenge = result.scalar_one_or_none()
+
+    if (
+        challenge is None
+        or challenge.consumed
+        or challenge.otp_verified
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset request is invalid or has "
+                "already been used."
+            ),
+        )
+
+    now = datetime.now(timezone.utc)
+    expires_at = as_utc(challenge.expires_at)
+
+    if now >= expires_at:
+        challenge.consumed = True
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Password reset code expired. Request a new code."
+            ),
+        )
+
+    if challenge.attempts >= OTP_MAX_ATTEMPTS:
+        challenge.consumed = True
+        await db.commit()
+        raise HTTPException(
+            status_code=429,
+            detail="Too many incorrect attempts. Request a new code.",
+        )
+
+    submitted_hash = otp_digest(
+        data.challenge_id,
+        data.otp,
+        "Password recovery is temporarily unavailable.",
+    )
+
+    if not hmac.compare_digest(
+        challenge.otp_hash,
+        submitted_hash,
+    ):
+        challenge.attempts += 1
+
+        if challenge.attempts >= OTP_MAX_ATTEMPTS:
+            challenge.consumed = True
+            await db.commit()
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "Too many incorrect attempts. "
+                    "Request a new code."
+                ),
+            )
+
+        await db.commit()
+
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect verification code.",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == challenge.user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if (
+        user is None
+        or user.is_blocked
+        or user.password_hash is None
+    ):
+        challenge.consumed = True
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset request is invalid or has "
+                "expired."
+            ),
+        )
+
+    reset_token = secrets.token_urlsafe(48)
+    challenge.otp_verified = True
+    challenge.reset_token_hash = reset_token_digest(reset_token)
+    challenge.reset_token_expires_at = (
+        now + timedelta(minutes=RESET_TOKEN_EXPIRY_MINUTES)
+    )
+
+    await db.commit()
+
+    return {
+        "message": "Code verified. You can now set a new password.",
+        "reset_token": reset_token,
+        "expires_in_seconds": RESET_TOKEN_EXPIRY_MINUTES * 60,
+    }
+
+
+@app.post("/auth/reset-password")
+async def reset_password(
+    data: ResetPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    enforce_rate_limit(
+        "reset_password",
+        request,
+        "",
+        RATE_LIMIT_RESET,
+        include_ip=True,
+    )
+
+    token_hash = reset_token_digest(data.reset_token)
+
+    result = await db.execute(
+        select(PasswordResetChallenge)
+        .where(
+            PasswordResetChallenge.reset_token_hash == token_hash
+        )
+        .with_for_update()
+    )
+    challenge = result.scalar_one_or_none()
+
+    now = datetime.now(timezone.utc)
+    token_expires_at = (
+        as_utc(challenge.reset_token_expires_at)
+        if challenge is not None
+        and challenge.reset_token_expires_at is not None
+        else None
+    )
+
+    if (
+        challenge is None
+        or challenge.consumed
+        or not challenge.otp_verified
+        or token_expires_at is None
+        or now >= token_expires_at
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset link is invalid or has expired."
+            ),
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == challenge.user_id)
+    )
+    user = result.scalar_one_or_none()
+
+    if (
+        user is None
+        or user.is_blocked
+        or user.password_hash is None
+    ):
+        challenge.consumed = True
+        challenge.reset_token_hash = None
+        challenge.reset_token_expires_at = None
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This password reset link is invalid or has expired."
+            ),
+        )
+
+    new_password_hash = hash_password(data.password)
+
+    user.password_hash = new_password_hash
+
+    # Consume the authorizing challenge and every other outstanding reset
+    # challenge for this user so neither the OTP nor any reset token can be
+    # reused.
+    await db.execute(
+        update(PasswordResetChallenge)
+        .where(
+            PasswordResetChallenge.user_id == user.id,
+            PasswordResetChallenge.consumed.is_(False),
+        )
+        .values(
+            consumed=True,
+            reset_token_hash=None,
+            reset_token_expires_at=None,
+        )
+    )
+    await db.commit()
+
+    return {
+        "message": (
+            "Password reset successfully. You can now log in."
+        )
     }
 
 

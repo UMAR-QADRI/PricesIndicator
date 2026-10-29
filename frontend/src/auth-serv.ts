@@ -10,6 +10,8 @@ export interface AuthResponse {
   message?: string;
   challenge_id?: string;
   resend_after_seconds?: number;
+  reset_token?: string;
+  expires_in_seconds?: number;
   access_token?: string;
   token_type?: string;
   user?: AuthUser;
@@ -113,6 +115,44 @@ export class AuthServ {
   }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(
       `${this.apiUrl}/auth/resend-otp`,
+      data
+    );
+  }
+
+  forgotPassword(data: {
+    email: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/forgot-password`,
+      data
+    );
+  }
+
+  resendResetOTP(data: {
+    challenge_id: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/resend-password-reset`,
+      data
+    );
+  }
+
+  verifyResetOTP(data: {
+    challenge_id: string;
+    otp: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/verify-password-reset-otp`,
+      data
+    );
+  }
+
+  resetPassword(data: {
+    reset_token: string;
+    password: string;
+  }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/reset-password`,
       data
     );
   }
@@ -256,9 +296,16 @@ export class AuthServ {
     sessionStorage.removeItem('otp_resend_available_at');
   }
 
+  clearPasswordResetSession(): void {
+    sessionStorage.removeItem('reset_challenge_id');
+    sessionStorage.removeItem('reset_email');
+    sessionStorage.removeItem('reset_resend_available_at');
+  }
+
   clearSession(): void {
     localStorage.removeItem('access_token');
     this.clearOtpSession();
+    this.clearPasswordResetSession();
   }
 
   logout(): void {

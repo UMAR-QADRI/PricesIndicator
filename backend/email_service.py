@@ -23,6 +23,7 @@ GMAIL_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 
 SUBJECT = "Verify your email address \u2014 Prices Indicator"
+PASSWORD_RESET_SUBJECT = "Reset your password \u2014 Prices Indicator"
 
 
 class EmailSendError(RuntimeError):
@@ -82,6 +83,62 @@ def _otp_html(name: str, otp: str) -> str:
     )
 
 
+def _password_reset_text(name: str, otp: str) -> str:
+    greeting_name = (name or "").strip() or "there"
+
+    return (
+        f"Hello {greeting_name},\n\n"
+        "We received a request to reset the password for your Prices "
+        "Indicator account.\n\n"
+        "Enter this password reset code to continue:\n\n"
+        f"{otp}\n\n"
+        "This code expires in 10 min. For your security, please do not "
+        "share this code with anyone.\n\n"
+        "If you did not request a password reset, you can safely ignore "
+        "this email. Your password will not be changed.\n\n"
+        "Best regards,\n"
+        "The Prices Indicator Team\n"
+    )
+
+
+def _password_reset_html(name: str, otp: str) -> str:
+    greeting_name = (name or "").strip() or "there"
+    safe_name = html.escape(greeting_name)
+    safe_otp = html.escape(otp)
+
+    return (
+        "<!doctype html><html><body "
+        "style=\"font-family:Arial,Helvetica,sans-serif;color:#111;\">"
+        f"<p>Hello {safe_name},</p>"
+        "<p>We received a request to reset the password for your Prices "
+        "Indicator account.</p>"
+        "<p>Enter this password reset code to continue:</p>"
+        f"<p style=\"font-size:28px;font-weight:bold;"
+        f"letter-spacing:4px;\">{safe_otp}</p>"
+        "<p>This code expires in 10 min. For your security, please do "
+        "not share this code with anyone.</p>"
+        "<p>If you did not request a password reset, you can safely ignore "
+        "this email. Your password will not be changed.</p>"
+        "<p>Best regards,<br>The Prices Indicator Team</p>"
+        "</body></html>"
+    )
+
+
+def _email_content(
+    purpose: str,
+    name: str,
+    otp: str,
+) -> tuple[str, str, str]:
+    if purpose == "password_reset":
+        return (
+            PASSWORD_RESET_SUBJECT,
+            _password_reset_text(name, otp),
+            _password_reset_html(name, otp),
+        )
+
+    return SUBJECT, _otp_text(name, otp), _otp_html(name, otp)
+
+
 def _smtp_settings() -> dict:
     host = _env("SMTP_HOST")
     username = _env("SMTP_USERNAME")
@@ -114,17 +171,25 @@ def _smtp_settings() -> dict:
     }
 
 
-def _smtp_send(to_email: str, otp: str, name: str = "") -> None:
+def _smtp_send(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
     settings = _smtp_settings()
+    subject, text_content, html_content = _email_content(
+        purpose, name, otp
+    )
 
     message = EmailMessage()
     message["From"] = (
         f"{settings['from_name']} <{settings['from_email']}>"
     )
     message["To"] = to_email
-    message["Subject"] = SUBJECT
-    message.set_content(_otp_text(name, otp))
-    message.add_alternative(_otp_html(name, otp), subtype="html")
+    message["Subject"] = subject
+    message.set_content(text_content)
+    message.add_alternative(html_content, subtype="html")
 
     context = ssl.create_default_context()
 
@@ -174,8 +239,15 @@ def _smtp_send(to_email: str, otp: str, name: str = "") -> None:
         raise EmailSendError("unknown") from exc
 
 
-async def _send_smtp(to_email: str, otp: str, name: str = "") -> None:
-    await asyncio.to_thread(_smtp_send, to_email, otp, name)
+async def _send_smtp(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
+    await asyncio.to_thread(
+        _smtp_send, to_email, otp, name, purpose
+    )
 
 
 def _http_category(status_code: int, provider: str, body: str) -> str:
@@ -233,10 +305,18 @@ async def _post_email(
     )
 
 
-async def _send_brevo(to_email: str, otp: str, name: str = "") -> None:
+async def _send_brevo(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
     api_key = _env("BREVO_API_KEY")
     sender_email = _env("BREVO_SENDER_EMAIL")
     sender_name = _env("BREVO_SENDER_NAME", "Prices Indicator")
+    subject, text_content, html_content = _email_content(
+        purpose, name, otp
+    )
 
     if not api_key or not sender_email:
         raise EmailSendError("config")
@@ -254,18 +334,26 @@ async def _send_brevo(to_email: str, otp: str, name: str = "") -> None:
                 "name": sender_name,
             },
             "to": [{"email": to_email}],
-            "subject": SUBJECT,
-            "textContent": _otp_text(name, otp),
-            "htmlContent": _otp_html(name, otp),
+            "subject": subject,
+            "textContent": text_content,
+            "htmlContent": html_content,
         },
         "brevo",
     )
 
 
-async def _send_resend(to_email: str, otp: str, name: str = "") -> None:
+async def _send_resend(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
     api_key = _env("RESEND_API_KEY")
     from_email = _env("RESEND_FROM_EMAIL")
     from_name = _env("RESEND_FROM_NAME", "Prices Indicator")
+    subject, text_content, html_content = _email_content(
+        purpose, name, otp
+    )
 
     if not api_key or not from_email:
         raise EmailSendError("config")
@@ -281,9 +369,9 @@ async def _send_resend(to_email: str, otp: str, name: str = "") -> None:
         {
             "from": f"{from_name} <{from_email}>",
             "to": [to_email],
-            "subject": SUBJECT,
-            "text": _otp_text(name, otp),
-            "html": _otp_html(name, otp),
+            "subject": subject,
+            "text": text_content,
+            "html": html_content,
         },
         "resend",
     )
@@ -341,23 +429,36 @@ def _gmail_access_token(settings: dict) -> str:
 
 
 def _gmail_raw_message(
-    to_email: str, otp: str, settings: dict, name: str = ""
+    to_email: str,
+    otp: str,
+    settings: dict,
+    name: str = "",
+    purpose: str = "signup",
 ) -> str:
+    subject, text_content, html_content = _email_content(
+        purpose, name, otp
+    )
+
     message = MIMEMultipart("alternative")
     message["To"] = to_email
     message["From"] = (
         f"{settings['sender_name']} <{settings['sender_email']}>"
     )
-    message["Subject"] = SUBJECT
-    message.attach(MIMEText(_otp_text(name, otp), "plain", "utf-8"))
-    message.attach(MIMEText(_otp_html(name, otp), "html", "utf-8"))
+    message["Subject"] = subject
+    message.attach(MIMEText(text_content, "plain", "utf-8"))
+    message.attach(MIMEText(html_content, "html", "utf-8"))
 
     return base64.urlsafe_b64encode(
         message.as_bytes()
     ).decode("ascii")
 
 
-async def _send_gmail_api(to_email: str, otp: str, name: str = "") -> None:
+async def _send_gmail_api(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
     settings = _gmail_settings()
 
     # Run the blocking token refresh off the event loop.
@@ -365,7 +466,9 @@ async def _send_gmail_api(to_email: str, otp: str, name: str = "") -> None:
         _gmail_access_token, settings
     )
 
-    raw_message = _gmail_raw_message(to_email, otp, settings, name)
+    raw_message = _gmail_raw_message(
+        to_email, otp, settings, name, purpose
+    )
 
     try:
         async with httpx.AsyncClient(
@@ -401,16 +504,34 @@ async def _send_gmail_api(to_email: str, otp: str, name: str = "") -> None:
     raise EmailSendError("unknown")
 
 
-async def send_otp_email(to_email: str, otp: str, name: str = "") -> None:
+async def send_otp_email(
+    to_email: str,
+    otp: str,
+    name: str = "",
+    purpose: str = "signup",
+) -> None:
     provider = _env("EMAIL_PROVIDER", "smtp").lower()
 
     if provider == "smtp":
-        await _send_smtp(to_email, otp, name)
+        await _send_smtp(to_email, otp, name, purpose)
     elif provider == "brevo":
-        await _send_brevo(to_email, otp, name)
+        await _send_brevo(to_email, otp, name, purpose)
     elif provider == "resend":
-        await _send_resend(to_email, otp, name)
+        await _send_resend(to_email, otp, name, purpose)
     elif provider == "gmail_api":
-        await _send_gmail_api(to_email, otp, name)
+        await _send_gmail_api(to_email, otp, name, purpose)
     else:
         raise EmailSendError("config")
+
+
+async def send_password_reset_email(
+    to_email: str,
+    otp: str,
+    name: str = "",
+) -> None:
+    await send_otp_email(
+        to_email,
+        otp,
+        name,
+        purpose="password_reset",
+    )

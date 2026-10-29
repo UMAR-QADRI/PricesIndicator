@@ -2,11 +2,13 @@ import { Routes } from '@angular/router';
 import { AdminDashboard } from '../admindashboard/admindashboard';
 import { Auth } from '../auth/auth';
 import { adminGuard, authGuard } from '../auth/auth.guard';
+import { ForgotPassword } from '../forgotpassword/forgotpassword';
 import { Otp } from '../otp/otp';
 import { UserDashboard } from '../userdashboard/userdashboard';
 
 export const routes: Routes = [
   { path: 'auth', component: Auth },
+  { path: 'forgot-password', component: ForgotPassword },
   { path: 'otp', component: Otp },
 
   {
