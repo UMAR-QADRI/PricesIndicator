@@ -18,6 +18,7 @@ describe('UserDashboard', () => {
         role: 'user' as const,
         email_verified: true
       }),
+    getScrapers: () => of({ scrapers: [] }),
     clearSession: () => undefined,
     logout: () => undefined
   };

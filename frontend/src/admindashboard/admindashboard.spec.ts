@@ -26,6 +26,7 @@ describe('AdminDashboard', () => {
       page_size: 10,
       pages: 1
     }),
+    getScrapers: () => of({ scrapers: [] }),
     clearSession: () => undefined,
     logout: () => undefined
   };

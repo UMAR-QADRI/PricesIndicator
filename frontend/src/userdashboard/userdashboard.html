@@ -46,7 +46,7 @@
       </h1>
 
       <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-        Manage your account details and access your Prices Indicator workspace.
+        Search enabled marketplaces and compare the latest product listings.
       </p>
     </section>
 
@@ -97,173 +97,271 @@
       </button>
     </div>
 
-    <!-- Account information -->
+    <!-- Product search -->
     <section
       *ngIf="user && !loading"
-      class="mt-6 grid min-w-0 gap-5 lg:grid-cols-[1.6fr_1fr]"
+      class="mt-6 min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6"
     >
-
-      <!-- Profile -->
-      <article class="min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6">
-        <div class="flex items-center gap-3 border-b border-white/10 pb-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
-            <svg
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
-            </svg>
-          </div>
-
-          <div class="min-w-0">
-            <h2 class="font-semibold text-white">Account information</h2>
-            <p class="mt-1 text-xs text-slate-400">
-              Your registered profile details
-            </p>
-          </div>
+      <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
         </div>
 
-        <dl class="divide-y divide-white/[0.07]">
-
-          <!-- Name -->
-          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <dt class="text-sm text-slate-400">Full name</dt>
-            <dd class="break-words text-sm font-medium text-slate-100 sm:text-right">
-              {{ user.name }}
-            </dd>
-          </div>
-
-          <!-- Email -->
-          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <dt class="text-sm text-slate-400">Email address</dt>
-            <dd class="break-all text-sm text-slate-100 sm:max-w-[65%] sm:text-right">
-              {{ user.email }}
-            </dd>
-          </div>
-
-          <!-- Role -->
-          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <dt class="text-sm text-slate-400">Account role</dt>
-            <dd>
-              <span class="inline-flex w-fit rounded-md border border-amber-400/25 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold capitalize text-amber-300">
-                {{ user.role }}
-              </span>
-            </dd>
-          </div>
-
-          <!-- Email verification -->
-          <div class="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <dt class="text-sm text-slate-400">Email verification</dt>
-            <dd>
-              <span
-                class="inline-flex w-fit items-center gap-2 text-sm"
-                [ngClass]="user.email_verified ? 'text-emerald-300' : 'text-amber-300'"
-              >
-                <!-- <span
-                  class="h-2 w-2 shrink-0 rounded-full"
-                  [ngClass]="user.email_verified ? 'bg-emerald-400' : 'bg-amber-400'"
-                ></span> -->
-
-                {{ user.email_verified ? 'Verified' : 'Not verified' }}
-              </span>
-            </dd>
-          </div>
-        </dl>
-      </article>
-
-      <!-- Account security -->
-      <aside class="min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6">
-        <div class="flex items-center gap-3 border-b border-white/10 pb-4">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
-            <svg
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-            >
-              <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
-          </div>
-
-          <div>
-            <h2 class="font-semibold text-white">Account security</h2>
-            <p class="mt-1 text-xs text-slate-400">Your account access details</p>
-          </div>
-        </div>
-
-        <p class="mt-4 text-sm leading-6 text-slate-400">
-          Keep your account credentials and email verification codes private.
-          Always log out when using a shared device.
-        </p>
-
-        <!-- Account ID -->
-        <div class="mt-5 rounded-lg border border-white/10 bg-[#071426] p-4">
-          <p class="text-xs text-slate-400">Account ID</p>
-          <p class="mt-2 break-all font-mono text-sm text-amber-300">
-            {{ user.id }}
+        <div class="min-w-0">
+          <h2 class="font-semibold text-white">Product search</h2>
+          <p class="mt-1 text-xs text-slate-400">
+            Search across the marketplaces enabled by an administrator
           </p>
         </div>
+      </div>
 
-        <!-- Verification status -->
-        <div
-          class="mt-4 flex items-start gap-3 rounded-lg border p-4"
-          [ngClass]="user.email_verified
-            ? 'border-emerald-400/20 bg-emerald-400/5'
-            : 'border-amber-400/20 bg-amber-400/5'"
+      <form (ngSubmit)="search()" class="mt-5 flex flex-col gap-3 sm:flex-row">
+        <label for="product-keyword" class="sr-only">Product keyword</label>
+        <input
+          id="product-keyword"
+          name="keyword"
+          type="search"
+          autocomplete="off"
+          [(ngModel)]="keyword"
+          [disabled]="searching"
+          placeholder="Search for a product, for example: iPhone 15"
+          class="min-w-0 flex-1 rounded-lg border border-white/15 bg-[#071426] px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-amber-400/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20 disabled:opacity-60"
+        />
+
+        <button
+          type="submit"
+          [disabled]="searching || scrapersLoading || scrapers.length === 0"
+          class="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20 focus:outline-none focus:ring-2 focus:ring-amber-400/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <svg
-            *ngIf="user.email_verified"
-            class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
+            *ngIf="!searching"
+            class="h-4 w-4"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="1.8"
           >
-            <path d="m5 12 4 4L19 6" />
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
           </svg>
 
           <svg
-            *ngIf="!user.email_verified"
-            class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
+            *ngIf="searching"
+            class="h-4 w-4 animate-spin"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
           >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 8v4m0 4h.01" />
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity=".25" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
           </svg>
 
-          <div class="min-w-0">
-            <p
-              class="text-sm font-medium"
-              [ngClass]="user.email_verified ? 'text-emerald-300' : 'text-amber-300'"
-            >
-              {{ user.email_verified ? 'Email verified' : 'Email not verified' }}
-            </p>
+          {{ searching ? 'Searching...' : 'Search' }}
+        </button>
+      </form>
 
-            <p class="mt-1 text-xs leading-5 text-slate-400">
-              {{
-                user.email_verified
-                  ? 'Your email address has been verified.'
-                  : 'Your email address has not yet been verified.'
-              }}
-            </p>
-          </div>
+      <div class="mt-5">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Marketplaces
+          </p>
+
+          <span *ngIf="!scrapersLoading && !scrapersError && scrapers.length > 0" class="text-xs text-slate-500">
+            {{ selectedScraperIds.length }} of {{ scrapers.length }} selected
+          </span>
         </div>
-      </aside>
+
+        <div *ngIf="scrapersLoading" class="mt-3 flex items-center gap-2 text-sm text-slate-400">
+          <svg class="h-4 w-4 animate-spin text-amber-400" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity=".25" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          </svg>
+          Loading scrapers...
+        </div>
+
+        <div
+          *ngIf="scrapersError"
+          role="alert"
+          class="mt-3 flex flex-col gap-3 rounded-lg border border-rose-400/25 bg-rose-400/5 p-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>{{ scrapersError }}</span>
+          <button
+            type="button"
+            (click)="loadScrapers()"
+            class="w-fit rounded-lg border border-rose-400/30 px-3 py-2 hover:bg-rose-400/10"
+          >
+            Try again
+          </button>
+        </div>
+
+        <p
+          *ngIf="!scrapersLoading && !scrapersError && scrapers.length === 0"
+          class="mt-3 rounded-lg border border-white/10 bg-[#071426] p-3 text-sm text-slate-400"
+        >
+          No scrapers are available right now. Please try again later.
+        </p>
+
+        <div *ngIf="scrapers.length > 0" class="mt-3 flex flex-wrap gap-2">
+          <label
+            *ngFor="let scraper of scrapers"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition"
+            [ngClass]="isScraperSelected(scraper.id)
+              ? 'border-amber-400/30 bg-amber-400/10 text-amber-200'
+              : 'border-white/10 bg-[#071426] text-slate-300 hover:border-white/20'"
+          >
+            <input
+              type="checkbox"
+              [checked]="isScraperSelected(scraper.id)"
+              (change)="toggleScraper(scraper.id, $event)"
+              [disabled]="searching"
+              class="h-4 w-4 rounded border-white/20 bg-[#071426] text-amber-400 focus:ring-amber-400/40"
+            />
+            {{ scraper.name }}
+          </label>
+        </div>
+      </div>
+
+      <p
+        *ngIf="searchError"
+        role="alert"
+        class="mt-4 rounded-lg border border-rose-400/25 bg-rose-400/5 p-3 text-sm text-rose-200"
+      >
+        {{ searchError }}
+      </p>
+    </section>
+
+    <!-- Search results -->
+    <section *ngIf="user && !loading && hasSearched" class="mt-6">
+
+      <div
+        *ngIf="searching"
+        role="status"
+        aria-live="polite"
+        class="flex items-center gap-3 rounded-xl border border-white/10 bg-[#0c1d33] p-4 text-sm text-slate-300"
+      >
+        <svg class="h-5 w-5 shrink-0 animate-spin text-amber-400" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity=".25" />
+          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        Searching enabled scrapers. This can take a moment...
+      </div>
+
+      <div
+        *ngIf="!searching && errorGroups.length > 0"
+        class="rounded-xl border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-100"
+      >
+        <h2 class="font-semibold text-amber-200">Some scrapers could not complete</h2>
+        <ul class="mt-3 space-y-2">
+          <li *ngFor="let failure of errorGroups" class="flex flex-col gap-1 sm:flex-row sm:gap-2">
+            <span class="font-medium text-amber-200">{{ failure.scraper.name }}:</span>
+            <span class="break-words">{{ failure.message }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        *ngIf="!searching && !searchError && resultGroups.length === 0 && errorGroups.length === 0"
+        class="rounded-xl border border-white/10 bg-[#0c1d33] p-5 text-sm text-slate-400"
+      >
+        No products found for "{{ lastKeyword }}".
+      </div>
+
+      <div *ngIf="!searching" class="mt-5 space-y-6">
+        <section
+          *ngFor="let group of resultGroups"
+          class="min-w-0 rounded-xl border border-white/10 bg-[#0c1d33] p-5 sm:p-6"
+        >
+          <div class="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-white">{{ group.scraper.name }}</h2>
+              <p class="mt-1 text-xs text-slate-400">
+                Results for "{{ lastKeyword }}"
+              </p>
+            </div>
+
+            <span class="w-fit rounded-lg border border-white/10 bg-[#071426] px-3 py-2 text-xs text-slate-300">
+              {{ group.products.length }} {{ group.products.length === 1 ? 'product' : 'products' }}
+            </span>
+          </div>
+
+          <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <article
+              *ngFor="let product of group.products"
+              class="flex min-w-0 gap-4 rounded-lg border border-white/10 bg-[#071426] p-4"
+            >
+              <img
+                *ngIf="productImage(product)"
+                [src]="productImage(product)"
+                [alt]="productTitle(product)"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                class="h-24 w-20 shrink-0 rounded-lg border border-white/10 bg-white/5 object-contain"
+              />
+
+              <div class="min-w-0 flex-1">
+                <h3 class="break-words text-sm font-semibold leading-5 text-slate-100">
+                  {{ productTitle(product) }}
+                </h3>
+
+                <p *ngIf="product.brand" class="mt-1 break-words text-xs text-slate-400">
+                  {{ product.brand }}
+                </p>
+
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                  <span *ngIf="productPrice(product)" class="text-sm font-semibold text-amber-300">
+                    {{ productPrice(product) }}
+                  </span>
+
+                  <span *ngIf="hasOriginalPrice(product)" class="text-xs text-slate-500 line-through">
+                    {{ productOriginalPrice(product) }}
+                  </span>
+
+                  <span
+                    *ngIf="hasValue(product.discount)"
+                    class="rounded-md border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-xs text-emerald-300"
+                  >
+                    {{ product.discount }}
+                  </span>
+                </div>
+
+                <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+                  <span *ngIf="hasValue(product.rating)">Rating: {{ product.rating }}</span>
+                  <span *ngIf="hasValue(reviewCount(product))">{{ reviewCount(product) }} reviews</span>
+                  <span *ngIf="product.seller" class="break-words">Seller: {{ product.seller }}</span>
+                  <span *ngIf="product.availability" class="break-words">{{ product.availability }}</span>
+                </div>
+
+                <a
+                  *ngIf="productUrl(product)"
+                  [href]="productUrl(product)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-300 hover:text-amber-200"
+                >
+                  View product
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M7 17 17 7M9 7h8v8" />
+                  </svg>
+                </a>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
     </section>
 
     <!-- Footer -->
     <footer class="mt-10 flex flex-col gap-2 border-t border-white/10 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
       <span>Prices Indicator · User dashboard</span>
-      <span>Account information</span>
+      <span>Product search</span>
     </footer>
   </main>
 </div>

@@ -42,6 +42,14 @@ from models import (
     User,
 )
 from rate_limit import rate_limiter
+from scraper_registry import (
+    DEFAULT_LIMIT,
+    MAX_LIMIT,
+    get_scrapers,
+    initialize_registry,
+    search_scrapers,
+    set_scraper_enabled,
+)
 
 BACKEND_DIR = Path(__file__).resolve().parent
 load_dotenv(BACKEND_DIR / ".env")
@@ -139,6 +147,8 @@ async def startup():
             "OTP_HMAC_SECRET is set."
         )
 
+    await run_in_threadpool(initialize_registry)
+
 
 # ----------------------------
 # Request schemas
@@ -181,6 +191,16 @@ class AdminUserUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     email: EmailStr | None = None
     role: Literal["user", "admin"] | None = None
+
+
+class ScraperSearchRequest(BaseModel):
+    keyword: str = Field(min_length=1, max_length=120)
+    scrapers: list[str] = Field(min_length=1, max_length=20)
+    limit: int = Field(default=DEFAULT_LIMIT, ge=1, le=MAX_LIMIT)
+
+
+class ScraperStatusRequest(BaseModel):
+    enabled: bool
 
 
 # ----------------------------
@@ -1826,6 +1846,57 @@ async def delete_admin_user(
         "message": "User deleted successfully.",
         "user_id": user_id,
     }
+
+
+# ----------------------------
+# Scraper search and settings
+# ----------------------------
+
+@app.get("/api/scrapers")
+async def list_scrapers(
+    user: Annotated[User, Depends(get_current_user)],
+):
+    return {"scrapers": get_scrapers()}
+
+
+@app.post("/api/scrapers/search")
+async def search_scraper_products(
+    data: ScraperSearchRequest,
+    user: Annotated[User, Depends(get_current_user)],
+):
+    keyword = data.keyword.strip()
+
+    if not keyword:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enter a keyword to search.",
+        )
+
+    return await search_scrapers(
+        keyword=keyword,
+        scraper_ids=data.scrapers,
+        limit=data.limit,
+    )
+
+
+@app.patch("/api/admin/scrapers/{scraper_id}")
+async def update_scraper_status(
+    scraper_id: str,
+    data: ScraperStatusRequest,
+    admin: Annotated[User, Depends(get_admin_user)],
+):
+    try:
+        return set_scraper_enabled(scraper_id, data.enabled)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scraper not found.",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to save scraper settings.",
+        ) from exc
 
 
 @app.get("/")

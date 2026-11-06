@@ -71,6 +71,39 @@ export interface AdminUserUpdate {
   role?: 'admin' | 'user';
 }
 
+export interface ScraperInfo {
+  id: string;
+  name: string;
+  enabled: boolean;
+  available: boolean;
+}
+
+export interface ScraperProduct {
+  title?: string | null;
+  price?: string | number | null;
+  original_price?: string | number | null;
+  discount?: string | null;
+  currency?: string | null;
+  image?: string | null;
+  images?: string[] | null;
+  product_url?: string | null;
+  url?: string | null;
+  rating?: string | number | null;
+  review_count?: string | number | null;
+  rating_count?: string | number | null;
+  seller?: string | null;
+  platform?: string | null;
+  brand?: string | null;
+  availability?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ScraperSearchResponse {
+  keyword: string;
+  results: Record<string, ScraperProduct[]>;
+  errors: Record<string, string>;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -270,6 +303,36 @@ export class AuthServ {
       user_id: number;
     }>(
       `${this.apiUrl}/admin/users/${userId}`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  getScrapers(): Observable<{ scrapers: ScraperInfo[] }> {
+    return this.http.get<{ scrapers: ScraperInfo[] }>(
+      `${this.apiUrl}/api/scrapers`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  searchScrapers(
+    keyword: string,
+    scrapers: string[],
+    limit = 20
+  ): Observable<ScraperSearchResponse> {
+    return this.http.post<ScraperSearchResponse>(
+      `${this.apiUrl}/api/scrapers/search`,
+      { keyword, scrapers, limit },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  updateScraperStatus(
+    scraperId: string,
+    enabled: boolean
+  ): Observable<ScraperInfo> {
+    return this.http.patch<ScraperInfo>(
+      `${this.apiUrl}/api/admin/scrapers/${scraperId}`,
+      { enabled },
       { headers: this.getAuthHeaders() }
     );
   }

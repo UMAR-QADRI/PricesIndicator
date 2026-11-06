@@ -9,6 +9,9 @@ python-jose[cryptography]
 google-auth
 email-validator
 httpx
+playwright
+beautifulsoup4
+lxml
 
 
 # python -m pip install -r requirements.txt

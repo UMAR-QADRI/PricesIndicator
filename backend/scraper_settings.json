@@ -1,0 +1,11 @@
+{
+  "enabled": {
+    "alfatah": true,
+    "daraz": true,
+    "mega": true,
+    "naheed": true,
+    "priceoye": true,
+    "shopon": true,
+    "telex": true
+  }
+}

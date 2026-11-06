@@ -15,7 +15,8 @@ import {
   AdminUserStatus,
   AdminUserUpdate,
   AuthServ,
-  AuthUser
+  AuthUser,
+  ScraperInfo
 } from '../auth-serv';
 
 @Component({
@@ -42,6 +43,13 @@ export class AdminDashboard implements OnInit {
   total = 0;
   pages = 1;
   actionUserId: number | null = null;
+
+  scrapers: ScraperInfo[] = [];
+  scrapersLoading = false;
+  scrapersError = '';
+  scraperActionId: string | null = null;
+  scraperMessage = '';
+  scraperActionError = '';
 
   editForm: FormGroup;
   editUser: AdminUser | null = null;
@@ -82,6 +90,7 @@ export class AdminDashboard implements OnInit {
         this.user = response.user;
         this.loading = false;
         this.loadUsers();
+        this.loadScrapers();
       },
       error: (error) => {
         this.loading = false;
@@ -148,6 +157,56 @@ export class AdminDashboard implements OnInit {
 
   refreshUsers(): void {
     this.loadUsers();
+  }
+
+  loadScrapers(): void {
+    this.scrapersLoading = true;
+    this.scrapersError = '';
+    this.scraperActionError = '';
+
+    this.auth.getScrapers().subscribe({
+      next: (response) => {
+        this.scrapers = response.scrapers;
+        this.scrapersLoading = false;
+      },
+      error: (error) => {
+        this.scrapersLoading = false;
+        this.scrapers = [];
+        this.scrapersError = this.apiErrorMessage(
+          error,
+          'Unable to load scrapers. Please try again.'
+        );
+      }
+    });
+  }
+
+  toggleScraper(scraper: ScraperInfo): void {
+    if (this.scraperActionId !== null) {
+      return;
+    }
+
+    this.scraperActionId = scraper.id;
+    this.scraperMessage = '';
+    this.scraperActionError = '';
+
+    this.auth.updateScraperStatus(scraper.id, !scraper.enabled).subscribe({
+      next: (updated) => {
+        this.scraperActionId = null;
+        this.scrapers = this.scrapers.map((item) =>
+          item.id === updated.id ? updated : item
+        );
+        this.scraperMessage = `${updated.name} ${
+          updated.enabled ? 'enabled' : 'disabled'
+        } successfully.`;
+      },
+      error: (error) => {
+        this.scraperActionId = null;
+        this.scraperActionError = this.apiErrorMessage(
+          error,
+          'Unable to update this scraper.'
+        );
+      }
+    });
   }
 
   goToPage(page: number): void {
