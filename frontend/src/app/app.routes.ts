@@ -14,11 +14,13 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: UserDashboard,
+    title:'Dashboard',
     canActivate: [authGuard]
   },
   {
     path: 'admin',
     component: AdminDashboard,
+    title:'AdminDashboard',
     canActivate: [authGuard, adminGuard]
   },
 
